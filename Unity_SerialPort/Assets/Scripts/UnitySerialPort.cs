@@ -190,15 +190,6 @@ public class UnitySerialPort : MonoBehaviour
     /// </summary>
     void Start()
     {
-        // Population of comport list via system.io.ports
-
-        PopulateComPorts();
-
-        // If set to true then open the port. You must 
-        // ensure that the port is valid etc. for this! 
-
-        if (OpenPortOnStart) { OpenSerialPort(); }
-
         // Register for a notification of the SerialDataParseEvent
 
         SerialDataParseEvent += 
@@ -213,6 +204,15 @@ public class UnitySerialPort : MonoBehaviour
 
         SerialPortCloseEvent +=
             new SerialPortCloseEventHandler(UnitySerialPort_SerialPortCloseEvent);
+
+        // Population of comport list via system.io.ports
+
+        PopulateComPorts();
+
+        // If set to true then open the port. You must 
+        // ensure that the port is valid etc. for this! 
+
+        if (OpenPortOnStart) { OpenSerialPort(); }        
     }
 
     /// <summary>
