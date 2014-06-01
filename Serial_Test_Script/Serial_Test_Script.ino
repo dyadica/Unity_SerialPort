@@ -45,37 +45,61 @@ int dummy = 0;
 // if true then run autodetection
 boolean autoDetect = true;
 
+// message sent for auto detection
+String autoDetectionMessage = "Arduino";
+
+// message used to detect handShake
+String handShake = "Unity3D";
+
 void setup() 
 {
   // Delay to facilitate start up of Xbee usually about 
   // 5 seconds. Comment out if using wired serial etc.
+  // If this is used then we need to account for this
+  // additional delay each time the port is tested and
+  // thus the microcontroller reboots.
   
   // delay(5000);
   
   // Initialise the serial port
   
   Serial.begin(9600);
-  
-  // Ready to go!  
-  
-  // Serial.println("Robot Ready");
 }
 
 void detectionLoop()
 {
   if (stringComplete) 
   {
-    if(inString = "Unity3D")
-    { autoDetect = false; } 
+    // Check to see if we have been 
+    // returned the handShake string
+    
+    if(inString = handShake)
+    { 
+      // If we have the handShake then set 
+      // detection to false and begin play.
+      
+      autoDetect = false; 
+      
+      // Exit the loop
+      return;
+    } 
     
     // Reset inString to empty
-    inString = "";    
+    inString = "";
+    
     // Reset the system for further 
-    // input of data   
+    // input of data.
+    
     stringComplete = false; 
   }
   
-  Serial.println("Arduino");
+  // Send the AutoDetection string.
+  
+  Serial.println(autoDetectionMessage);
+  
+  // Pause a little to allow for
+  // mesages to be sent etc.
+  
   delay(100);
 }
 
@@ -83,12 +107,17 @@ void playbackLoop()
 {
   if (stringComplete) 
   {    
-    // Parse the recieved data
+    // Parse the recieved data.
+    
     ParseSerialData();
-    // Reset inString to empty
+    
+    // Reset inString to empty.
+    
     inString = "";    
+    
     // Reset the system for further 
-    // input of data   
+    // input of data.
+    
     stringComplete = false; 
   }  
   
@@ -115,14 +144,12 @@ void playbackLoop()
 
 void loop() 
 {
-  if(autoDetect == true)
-  {
-    detectionLoop();
-  }
-  else
-  {
-    playbackLoop();
-  }
+  // If we are in auto connection mode then
+  // run the detection loop. Otherwise run
+  // the playback loop.
+  
+  if(autoDetect == true) { detectionLoop(); }
+  else { playbackLoop(); }
 }
 
 void ParseSerialData()
