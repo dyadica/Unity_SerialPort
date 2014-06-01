@@ -5,6 +5,8 @@ Auto Connection Branch Details:
 
 This branch is where I am updating the core of the serial-port script to include capability for automatic detection and connection to a defined microcontroller.
 
+! This is a non stable developmental branch !
+
 Master Branch Details:
 
 This repository presents a script and or prefab developed to allow drag and drop capability for serial communication within the Unity3D game development ecosystem. This in turn allows for the use of  custom gaming controllers and hardware developed on platforms such as Arduino and Netduino within Unity applications.
