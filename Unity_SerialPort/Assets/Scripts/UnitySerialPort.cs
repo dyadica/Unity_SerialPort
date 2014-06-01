@@ -158,7 +158,7 @@ public class UnitySerialPort : MonoBehaviour
 
     public bool AutoDetectArduino = false;
     public string AutoDetectMessage = "Arduino";
-    private bool detected = false;
+    public string HandshakeMessage = "Unity3D";
 
     #endregion Properties
 
@@ -218,7 +218,6 @@ public class UnitySerialPort : MonoBehaviour
 
         if (AutoDetectArduino)
         {
-            detected = false;
             AutoDetectArduinoComPort();
         }
         else
@@ -507,16 +506,7 @@ public class UnitySerialPort : MonoBehaviour
         StartCoroutine("SerialCoroutineLoop");
     }
 
-    public IEnumerator DetectionCoroutineLoop()
-    {
-        while (detected == false)
-        {
-            DetectionLoop();
-            yield return null;
-        }
-    }
-
-    private void DetectionLoop()
+    private void AutoDetectArduinoComPort()
     {
         SerialPort = new SerialPort();
 
@@ -573,7 +563,15 @@ public class UnitySerialPort : MonoBehaviour
             {
                 if (SerialPort.IsOpen) // Port has been opened properly...
                 {
-                    SerialPort.ReadTimeout = 5000;
+                    // We have a long timeout here to account for
+                    // the microcontroller rebooting upon serial
+                    // connection attempts.
+
+                    SerialPort.ReadTimeout = 2000;
+
+                    // Really this should be run in a Thread as not to
+                    // hang up the playback of the Unity3D application.
+
                     SerialPort.WriteTimeout = WriteTimeout;
 
                     print("Attempting to open port " + SerialPort.PortName);
@@ -591,19 +589,9 @@ public class UnitySerialPort : MonoBehaviour
                         {
                             print(SerialPort.PortName + " Opened Successfully!");
 
-                            Thread.Sleep(200);
-
-                            // Send a string to the arduino to let
-                            // it know that we are connected!
-
-                            for (int i = 0; i < 20; i++)
-                            {
-                                SerialPort.WriteLine("Unity3D");
-                            }
+                            // Thread.Sleep(200);
 
                             SerialPort.ReadTimeout = ReadTimeout;
-
-                            detected = true;
 
                             print("Initialising the listen loop");                            
 
@@ -738,6 +726,10 @@ public class UnitySerialPort : MonoBehaviour
                 {
                     // Store the raw data
                     RawData = rData;
+
+                    if (RawData == AutoDetectMessage)
+                    { SendSerialDataAsLine(HandshakeMessage); }
+
                     // split the raw data into chunks via ',' and store it
                     // into a string array
                     ChunkData = RawData.Split(',');
@@ -748,7 +740,7 @@ public class UnitySerialPort : MonoBehaviour
                 }
             }
         }
-        catch (TimeoutException timeout)
+        catch (TimeoutException)
         {
             // This will be triggered lots with the coroutine method
         }
@@ -808,10 +800,10 @@ public class UnitySerialPort : MonoBehaviour
         portStatus = "ComPort list population complete";
     }
 
-    public void AutoDetectArduinoComPort()
-    {
-        StartCoroutine(DetectionCoroutineLoop());
-    }
+    //public void AutoDetectArduinoComPort()
+    //{
+    //    StartCoroutine(DetectionCoroutineLoop());
+    //}
 
     /// <summary>
     /// Function used to update the current selected com port
