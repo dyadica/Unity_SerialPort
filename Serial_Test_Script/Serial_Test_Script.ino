@@ -42,12 +42,15 @@ boolean showDataStream = false;
 // dummy prop value to send to Unity
 int dummy = 0;
 
+// if true then run autodetection
+boolean autoDetect = true;
+
 void setup() 
 {
   // Delay to facilitate start up of Xbee usually about 
   // 5 seconds. Comment out if using wired serial etc.
   
-  delay(5000);
+  // delay(5000);
   
   // Initialise the serial port
   
@@ -55,13 +58,36 @@ void setup()
   
   // Ready to go!  
   
-  Serial.println("Robot Ready");
+  // Serial.println("Robot Ready");
 }
 
-void loop() 
+void detectionLoop()
 {
   if (stringComplete) 
   {
+    // Perform autodetection check
+    if(autoDetect == true)
+    {
+      if(inString == "Unity3D")
+      {
+        autoDetect = false;
+      }
+    }    
+    // Reset inString to empty
+    inString = "";    
+    // Reset the system for further 
+    // input of data   
+    stringComplete = false; 
+  }
+  
+  Serial.println("Arduino");
+  delay(100);
+}
+
+void playbackLoop()
+{
+  if (stringComplete) 
+  {    
     // Parse the recieved data
     ParseSerialData();
     // Reset inString to empty
@@ -89,6 +115,18 @@ void loop()
     // slow things down a little
     
     delay(50);
+  }
+}
+
+void loop() 
+{
+  if(autoDetect)
+  {
+    detectionLoop();
+  }
+  else
+  {
+    playbackLoop();
   }
 }
 

@@ -156,6 +156,10 @@ public class UnitySerialPort : MonoBehaviour
 
     public bool ShowDebugs = true;
 
+    public bool AutoDetectArduino = false;
+    public string AutoDetectMessage = "Arduino";
+    private bool detected = false;
+
     #endregion Properties
 
     #region Unity Frame Events
@@ -209,10 +213,21 @@ public class UnitySerialPort : MonoBehaviour
 
         PopulateComPorts();
 
-        // If set to true then open the port. You must 
-        // ensure that the port is valid etc. for this! 
+        // If set to true then we will try to autodetect
+        // the arduino and open the port.
 
-        if (OpenPortOnStart) { OpenSerialPort(); }        
+        if (AutoDetectArduino)
+        {
+            detected = false;
+            AutoDetectArduinoComPort();
+        }
+        else
+        {
+            // If set to true then open the port. You must 
+            // ensure that the port is valid etc. for this! 
+
+            if (OpenPortOnStart) { OpenSerialPort(); } 
+        }        
     }
 
     /// <summary>
@@ -381,43 +396,8 @@ public class UnitySerialPort : MonoBehaviour
             // Open the serial port
             SerialPort.Open();
 
-            // Update the gui if applicable
-            if (Instance != null && Instance.ComStatusText != null)
-            { Instance.ComStatusText.guiText.text = "ComStatus: Open"; }
-
-            if (isRunning == false)
-            {
-                StartSerialCoroutine();
-            }
-            else
-            {
-                isRunning = false;
-
-                // Give it chance to timeout
-                Thread.Sleep(100);
-
-                try
-                {
-                    // Kill it just in case
-                    StopCoroutine("SerialCoroutineLoop");
-                }
-                catch (Exception ex)
-                {
-                    if (ShowDebugs)
-                        print("Error N: " + ex.Message.ToString());
-                }
-
-                // Restart it once more
-                StartSerialCoroutine();
-            }
-
-            if (ShowDebugs)
-                print("SerialPort successfully opened!");
-
-            // Trigger a port open notification
-
-            if (SerialPortOpenEvent != null)
-                SerialPortOpenEvent();
+            // Initialise the serial listening loop
+            InitialiseTheSerialLoop();
 
         }
         catch (Exception ex)
@@ -425,6 +405,50 @@ public class UnitySerialPort : MonoBehaviour
             // Failed to open com port or start serial thread
             Debug.Log("Error 1: " + ex.Message.ToString());
         }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public void InitialiseTheSerialLoop()
+    {
+        // Update the gui if applicable
+        if (Instance != null && Instance.ComStatusText != null)
+        { Instance.ComStatusText.guiText.text = "ComStatus: Open"; }
+
+        if (isRunning == false)
+        {
+            StartSerialCoroutine();
+        }
+        else
+        {
+            isRunning = false;
+
+            // Give it chance to timeout
+            Thread.Sleep(100);
+
+            try
+            {
+                // Kill it just in case
+                StopCoroutine("SerialCoroutineLoop");
+            }
+            catch (Exception ex)
+            {
+                if (ShowDebugs)
+                    print("Error N: " + ex.Message.ToString());
+            }
+
+            // Restart it once more
+            StartSerialCoroutine();
+        }
+
+        if (ShowDebugs)
+            print("SerialPort successfully opened!");
+
+        // Trigger a port open notification
+
+        if (SerialPortOpenEvent != null)
+            SerialPortOpenEvent();
     }
 
     /// <summary>
@@ -481,6 +505,126 @@ public class UnitySerialPort : MonoBehaviour
         isRunning = true;
 
         StartCoroutine("SerialCoroutineLoop");
+    }
+
+    public IEnumerator DetectionCoroutineLoop()
+    {
+        while (detected == false)
+        {
+            DetectionLoop();
+            yield return null;
+        }
+    }
+
+    private void DetectionLoop()
+    {
+        SerialPort = new SerialPort();
+
+        foreach (string cPort in System.IO.Ports.SerialPort.GetPortNames())
+        {
+            SerialPort.Close();
+
+            bool portfound = false;
+            SerialPort.PortName = cPort;
+            SerialPort.BaudRate = BaudRate;
+
+            try
+            {
+                SerialPort.Open();
+                print("Trying port: " + cPort);
+            }
+            catch (IOException)
+            {
+                print("Invalid Port");
+                continue;
+            }
+            catch (InvalidOperationException)
+            {
+                print("Invalid Port");
+                continue;
+            }
+            catch (ArgumentNullException)
+            {
+                print("Invalid Port");
+                continue;
+            }
+            catch (TimeoutException)
+            {
+                print("Invalid Port");
+                continue;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                print("Invalid Port");
+                continue;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                print("Invalid Port");
+                continue;
+            }
+            catch (ArgumentException)
+            {
+                print("Invalid Port");
+                continue;
+            }
+
+            if (!portfound)
+            {
+                if (SerialPort.IsOpen) // Port has been opened properly...
+                {
+                    SerialPort.ReadTimeout = 5000;
+                    SerialPort.WriteTimeout = WriteTimeout;
+
+                    print("Attempting to open port " + SerialPort.PortName);
+
+                    try
+                    {
+                        print("Waiting for a response from controller: " + SerialPort.PortName);
+                        string comms = SerialPort.ReadLine();
+
+                        // print("Reading From Port " + SerialPort.PortName);
+
+                        // We have found the arduino!
+
+                        if (comms == AutoDetectMessage)
+                        {
+                            print(SerialPort.PortName + " Opened Successfully!");
+
+                            Thread.Sleep(200);
+
+                            // Send a string to the arduino to let
+                            // it know that we are connected!
+
+                            for (int i = 0; i < 20; i++)
+                            {
+                                SerialPort.WriteLine("Unity3D");
+                            }
+
+                            SerialPort.ReadTimeout = ReadTimeout;
+
+                            detected = true;
+
+                            print("Initialising the listen loop");                            
+
+                            InitialiseTheSerialLoop();
+                        }
+                        else
+                        {
+                            print("Port Not Found! Please cycle controller power and try again");
+
+                            SerialPort.Close();
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        print("Incorrect Port! Trying again...");
+
+                        SerialPort.Close();
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -662,6 +806,11 @@ public class UnitySerialPort : MonoBehaviour
 
         // Update the port status just in case :)
         portStatus = "ComPort list population complete";
+    }
+
+    public void AutoDetectArduinoComPort()
+    {
+        StartCoroutine(DetectionCoroutineLoop());
     }
 
     /// <summary>
