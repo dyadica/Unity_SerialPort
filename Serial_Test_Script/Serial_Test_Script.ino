@@ -65,14 +65,9 @@ void detectionLoop()
 {
   if (stringComplete) 
   {
-    // Perform autodetection check
-    if(autoDetect == true)
-    {
-      if(inString == "Unity3D")
-      {
-        autoDetect = false;
-      }
-    }    
+    if(inString = "Unity3D")
+    { autoDetect = false; } 
+    
     // Reset inString to empty
     inString = "";    
     // Reset the system for further 
@@ -120,7 +115,7 @@ void playbackLoop()
 
 void loop() 
 {
-  if(autoDetect)
+  if(autoDetect == true)
   {
     detectionLoop();
   }
