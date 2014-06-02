@@ -523,39 +523,9 @@ public class UnitySerialPort : MonoBehaviour
                 SerialPort.Open();
                 print("Trying port: " + cPort);
             }
-            catch (IOException)
+            catch
             {
-                print("Invalid Port");
-                continue;
-            }
-            catch (InvalidOperationException)
-            {
-                print("Invalid Port");
-                continue;
-            }
-            catch (ArgumentNullException)
-            {
-                print("Invalid Port");
-                continue;
-            }
-            catch (TimeoutException)
-            {
-                print("Invalid Port");
-                continue;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                print("Invalid Port");
-                continue;
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                print("Invalid Port");
-                continue;
-            }
-            catch (ArgumentException)
-            {
-                print("Invalid Port");
+                print("Invalid Port!");
                 continue;
             }
 
@@ -579,9 +549,8 @@ public class UnitySerialPort : MonoBehaviour
                     try
                     {
                         print("Waiting for a response from controller: " + SerialPort.PortName);
-                        string comms = SerialPort.ReadLine();
 
-                        // print("Reading From Port " + SerialPort.PortName);
+                        string comms = SerialPort.ReadLine();
 
                         // We have found the arduino!
 
@@ -589,7 +558,8 @@ public class UnitySerialPort : MonoBehaviour
                         {
                             print(SerialPort.PortName + " Opened Successfully!");
 
-                            // Thread.Sleep(200);
+                            // Reset the timeout to that defined in 
+                            // the unity editor
 
                             SerialPort.ReadTimeout = ReadTimeout;
 
