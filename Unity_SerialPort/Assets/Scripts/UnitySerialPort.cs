@@ -218,7 +218,8 @@ public class UnitySerialPort : MonoBehaviour
 
         if (AutoDetectArduino)
         {
-            AutoDetectArduinoComPort();
+            // AutoDetectArduinoComPort();
+            StartCoroutine(DetectionCoroutineLoop());
         }
         else
         {
@@ -599,6 +600,90 @@ public class UnitySerialPort : MonoBehaviour
 
         if (ShowDebugs)
             print("Ending Coroutine!");
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerator DetectionCoroutineLoop()
+    {
+        SerialPort = new SerialPort();
+
+        while (AutoDetectArduino)
+        {
+            foreach (string cPort in System.IO.Ports.SerialPort.GetPortNames())
+            {
+                // yield return null;
+
+                SerialPort.PortName = cPort;
+                SerialPort.BaudRate = BaudRate;
+                SerialPort.ReadTimeout = ReadTimeout;
+
+                try
+                {
+                    print("Trying port: " + cPort);
+                    SerialPort.Open();                    
+                }
+                catch
+                {
+                    print("Invalid Port: " + cPort);
+                    continue;
+                }
+
+                if (SerialPort.IsOpen)
+                {
+                    print("Allowing for microcontroller boot!");
+
+                    yield return new WaitForSeconds(2);
+
+                    try
+                    {
+                        print("Waiting for a response from controller: " + SerialPort.PortName);
+
+                        string message = SerialPort.ReadLine();
+
+                        if (message != null && message == AutoDetectMessage)
+                        {
+                            print(SerialPort.PortName + " Opened Successfully!");
+
+                            print("Initialising the listen loop");
+
+                            InitialiseTheSerialLoop();
+
+                            AutoDetectArduino = false;
+
+                            break;
+                        }
+                        else
+                        {
+                            print("Incorrect Detection Message!");
+                            SerialPort.Close();
+                        }
+                    }
+                    catch
+                    {
+                        print("Failed to get a response from controller: " + SerialPort.PortName);
+
+                        try
+                        {
+                            if (SerialPort.IsOpen)
+                                SerialPort.Close();
+                        }
+                        catch
+                        {
+                            print("Failed to close port: " + SerialPort.PortName);
+                        }
+                    }
+                }
+
+                yield return null;
+            }
+
+            yield return null;
+        }
+
+        StopCoroutine("DetectionCoroutineLoop");
     }
 
     /// <summary>
