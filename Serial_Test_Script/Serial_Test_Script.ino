@@ -126,6 +126,8 @@ void ParseSerialData()
       case 'B': FunctionB(prop); break;
     }    
   }
+  // Clear inData, so there are no leftovers for next cycle
+  memset(&inData[0], 0, sizeof(inData));
 }
 
 void serialEvent() 
