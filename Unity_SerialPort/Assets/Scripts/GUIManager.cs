@@ -21,20 +21,23 @@
 using UnityEngine;
 using System.Collections;
 
+//
+
+using UnityEngine.UI;
+
 public class GUIManager : MonoBehaviour 
 {
     public static GUIManager Instance;
 
     private UnitySerialPort unitySerialPort;
 
-    public GUISkin GUISkin;
-
-    public string OutputString;
-
     private string PortOpenStatus;
 
-    public GUIText RawDataGUI;
-    public GUIText DataValueGUI;
+    public Text RawDataGUI;
+    public Text DataValueGUI;
+    public Text ComButton;
+
+    public InputField OutputString;
 
     public bool ShowDebugs = true;
 
@@ -78,7 +81,9 @@ public class GUIManager : MonoBehaviour
 
         UnitySerialPort.SerialPortSentLineDataEvent +=
             new UnitySerialPort.SerialPortSentLineDataEventHandler(UnitySerialPort_SerialPortSentLineDataEvent);
-	}
+
+       
+    }
 	
     /// <summary>
     /// Update is called once per frame
@@ -90,7 +95,14 @@ public class GUIManager : MonoBehaviour
 
         if (unitySerialPort.SerialPort == null)
         {
-            PortOpenStatus = "Open Port"; return;
+            // Display the ports status (via button)
+
+            PortOpenStatus = "Open Port";
+
+            if (ComButton != null)
+                ComButton.text = PortOpenStatus;
+
+            return;
         }
 
         // Check to see if the serial port is open or not
@@ -111,72 +123,36 @@ public class GUIManager : MonoBehaviour
         // Edit > Project Settings > Input
 
         if (Input.GetButtonDown("SendData"))
-        { unitySerialPort.SendSerialDataAsLine(OutputString); }
+        { unitySerialPort.SendSerialDataAsLine(OutputString.text); }
 	}
 
-    /// <summary>
-    /// OnGUI is called once per draw
-    /// </summary>
-    void OnGUI ()
+    // Method that can be used to both open
+    // and close the serial port.
+
+    public void OpenClosePort()
     {
-        // If we have defined a GUI Skin via the unity 
-        // editor then apply it.
+        if (unitySerialPort.SerialPort == null)
+        { unitySerialPort.OpenSerialPort(); return; }
 
-        if (GUISkin != null) { GUI.skin = GUISkin; }
-
-        // Draw an area to hold the GUI content.
-
-        GUILayout.BeginArea(new Rect(10, 10, 200, 200), "", GUI.skin.box);
-
-        // Draw a button that can be used to open or
-        // close the serial port.
-
-        if (GUILayout.Button(PortOpenStatus, GUILayout.Height(30)))
+        switch (unitySerialPort.SerialPort.IsOpen)
         {
-            if (unitySerialPort.SerialPort == null)
-            { unitySerialPort.OpenSerialPort(); return; }
-
-            switch (unitySerialPort.SerialPort.IsOpen)
-            {
-                case true: unitySerialPort.CloseSerialPort(); break;
-                case false: unitySerialPort.OpenSerialPort(); break;
-            }
+            case true: unitySerialPort.CloseSerialPort(); break;
+            case false: unitySerialPort.OpenSerialPort(); break;
         }
 
-        // Draw a title for the input textfield
+        // Update the buttons text display
 
-        GUILayout.Label("Input string");
+        if (ComButton != null)
+            ComButton.text = PortOpenStatus;
+    }
 
-        // Draw a textfield that can be used to show 
-        // data sent via the serial port to unity.
+    // Method that can be used to send serial
+    // data from the unity environment.
 
-        GUILayout.TextField(unitySerialPort.RawData,GUILayout.Height(20));
-
-        // Provide some padding to seperate
-
-        GUILayout.Space(20);
-
-        // Draw a title for the output textfield
-
-        GUILayout.Label("Output string");
-
-        // Draw a textfield that can be used to define 
-        // data to be sent via the serial port
-
-        OutputString = GUILayout.TextField(OutputString, GUILayout.Height(20));
-
-        // Draw a button that can be used to send serial
-        // data from the unity environment.
-
-        if (GUILayout.Button("Send Data", GUILayout.Height(30)))
-        {
-            if (unitySerialPort.SerialPort.IsOpen)
-                unitySerialPort.SendSerialDataAsLine(OutputString);
-        }
-
-        // Thats it we are finished so lets close the area
-
-        GUILayout.EndArea();
+    public void SendSerialData()
+    {
+        if (unitySerialPort.SerialPort.IsOpen)
+            unitySerialPort.SendSerialDataAsLine(OutputString.text);
     }
 
     /// <summary>

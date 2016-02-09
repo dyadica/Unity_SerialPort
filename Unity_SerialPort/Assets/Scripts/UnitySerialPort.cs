@@ -34,6 +34,9 @@ using System.Threading;
 // needed for invoke
 using System.ComponentModel;
 
+using UnityEngine.UI;
+using System.Collections.Generic;
+
 public class UnitySerialPort : MonoBehaviour 
 {
     // Init a static reference if script is to be accessed by others when used in a 
@@ -62,6 +65,12 @@ public class UnitySerialPort : MonoBehaviour
     private ArrayList comPorts =
         new ArrayList();
 
+    public List<string> ComPorts =
+        new List<string>();
+
+    public List<int> BaudRates =
+        new List<int>() { 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 38400, 57600, 115200 };
+
     // If set to true then open the port when the start
     // event is called.
 
@@ -78,7 +87,7 @@ public class UnitySerialPort : MonoBehaviour
 
     // Current com port and set of default
 
-    public string ComPort = "COM5";
+    public string ComPort = @"COM10";
 
     // Current baud rate and set of default
 
@@ -120,8 +129,8 @@ public class UnitySerialPort : MonoBehaviour
     // functionality if script is to be used in a non-static
     // context.
 
-    public GameObject ComStatusText;
-    public GameObject RawDataText;
+    public Text ComStatusText;
+    public Text RawDataText;
     
     // Define a delegate for our event to use. Delegates 
     // encapsulate both an object instance and a method 
@@ -180,7 +189,7 @@ public class UnitySerialPort : MonoBehaviour
         // Details if the port is open or closed
 
         if (ComStatusText != null)
-        { ComStatusText.guiText.text = "ComStatus: Closed"; }
+        { ComStatusText.text = "ComStatus: Closed"; }
     }
 
     /// <summary>
@@ -282,7 +291,7 @@ public class UnitySerialPort : MonoBehaviour
             // seperate script... see RawDataExample.cs
 
             if (RawDataText != null)
-                RawDataText.guiText.text = RawData;
+                RawDataText.text = RawData;
         }
         catch (Exception ex)
         {
@@ -383,7 +392,7 @@ public class UnitySerialPort : MonoBehaviour
 
             // Update the gui if applicable
             if (Instance != null && Instance.ComStatusText != null)
-            { Instance.ComStatusText.guiText.text = "ComStatus: Open"; }
+            { Instance.ComStatusText.text = "ComStatus: Open"; }
 
             if (isRunning == false)
             {
@@ -440,7 +449,7 @@ public class UnitySerialPort : MonoBehaviour
 
             // Update the gui if applicable
             if (Instance.ComStatusText != null)
-            { Instance.ComStatusText.guiText.text = "ComStatus: Closed"; }
+            { Instance.ComStatusText.text = "ComStatus: Closed"; }
         }
         catch (Exception ex)
         {
@@ -655,9 +664,13 @@ public class UnitySerialPort : MonoBehaviour
     public void PopulateComPorts()
     {
         // Loop through all available ports and add them to the list
-        foreach (string cPort in System.IO.Ports.SerialPort.GetPortNames())
+        foreach (string cPort in SerialPort.GetPortNames())
         {
-            comPorts.Add(cPort); // Debug.Log(cPort.ToString());
+            ComPorts.Add(cPort);
+
+            comPorts.Add(cPort);
+
+            Debug.Log(cPort.ToString());
         }
 
         // Update the port status just in case :)
