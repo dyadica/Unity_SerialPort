@@ -44,12 +44,7 @@ public class UnitySerialPort : MonoBehaviour
 
     #region Properties
 
-    public enum LoopMethods
-    { Threading, Coroutine }
 
-    [SerializeField]
-    public LoopMethods LoopMethod = 
-        LoopMethods.Coroutine;
 
     // The serial port
 
@@ -58,26 +53,27 @@ public class UnitySerialPort : MonoBehaviour
     // Thread for thread version of port
     Thread SerialLoopThread;
 
-    // List of all baudrates available to the arduino platform
+    [Header("SerialPort")]
 
-    private ArrayList baudRates =
-        new ArrayList() { 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 38400, 57600, 115200 };
+    // Current com port and set of default
 
-    // List of all com ports available on the system
+    public string ComPort = "COM5";
 
-    private ArrayList comPorts =
-        new ArrayList();
+    // Current baud rate and set of default
 
-    public List<string> ComPorts =
-        new List<string>();
+    // 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 38400, 57600, 115200
+    public int BaudRate = 115200;
 
-    public List<int> BaudRates =
-        new List<int>() { 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 38400, 57600, 115200 };
+    public Parity Parity = Parity.None;
 
-    // If set to true then open the port when the start
-    // event is called.
+    public StopBits StopBits = StopBits.One;
 
-    public bool OpenPortOnStart = false;
+    public int DataBits = 8;
+
+    public bool DtrEnable;
+    public bool RtsEnable;
+
+    
 
     // Holder for status report information
 
@@ -87,14 +83,6 @@ public class UnitySerialPort : MonoBehaviour
         get { return portStatus; }
         set { portStatus = value; }
     }
-
-    // Current com port and set of default
-
-    public string ComPort = "COM5";
-
-    // Current baud rate and set of default
-
-    public int BaudRate = 38400;
 
     // Read and write timeouts
 
@@ -127,6 +115,8 @@ public class UnitySerialPort : MonoBehaviour
         get { return chunkData; }
         set { chunkData = value; }
     }
+
+    [Header("GUI Fields")]
 
     // Refs populated by the editor inspector for default gui
     // functionality if script is to be used in a non-static
@@ -169,7 +159,30 @@ public class UnitySerialPort : MonoBehaviour
     public delegate void SerialPortSentLineDataEventHandler(string data);
     public static event SerialPortSentLineDataEventHandler SerialPortSentLineDataEvent;
 
+   
+    public enum LoopMethods
+    { Threading, Coroutine }
+
+    [Header("Options")]
+    [SerializeField]
+    public LoopMethods LoopMethod =
+        LoopMethods.Coroutine;
+
+    // If set to true then open the port when the start
+    // event is called.
+
+    public bool OpenPortOnStart = false;
     public bool ShowDebugs = true;
+
+    
+    // List of all com ports available on the system
+
+    private ArrayList comPorts =
+        new ArrayList();
+
+    [Header("Misc")]
+    public List<string> ComPorts =
+        new List<string>();
 
     #endregion Properties
 
@@ -413,14 +426,13 @@ public class UnitySerialPort : MonoBehaviour
         try
         {
             // Initialise the serial port
-            SerialPort = new SerialPort(ComPort, BaudRate);
+            SerialPort = new SerialPort(ComPort, BaudRate, Parity, DataBits, StopBits);
 
             SerialPort.ReadTimeout = ReadTimeout;
-
             SerialPort.WriteTimeout = WriteTimeout;
 
-            SerialPort.DtrEnable = false;
-            SerialPort.RtsEnable = false;
+            SerialPort.DtrEnable = DtrEnable;
+            SerialPort.RtsEnable = RtsEnable;
 
             // Open the serial port
             SerialPort.Open();
@@ -821,43 +833,6 @@ public class UnitySerialPort : MonoBehaviour
 
         // Return the new ComPort just in case
         return ComPort;
-    }
-
-    /// <summary>
-    /// Function used to update the current baudrate
-    /// </summary>
-    public int UpdateBaudRate()
-    {
-        // If open close the existing port
-        if (SerialPort != null && SerialPort.IsOpen)
-        { CloseSerialPort(); }
-
-        // Find the current id of the existing rate within the
-        // list of defined baudrates
-        int currentBaudRate = baudRates.IndexOf(BaudRate);
-
-        // check against the list of rates and get the next one.
-        // If we have reached the end of the list then reset to zero.
-        if (currentBaudRate + 1 <= baudRates.Count - 1)
-        {
-            // Inc the rate by 1 to get the next rate
-            BaudRate = (int)baudRates[currentBaudRate + 1];
-        }
-        else
-        {
-            // We have reached the end of the list reset to the
-            // first available rate.
-            BaudRate = (int)baudRates[0];
-        }
-
-        // Update the port status just in case :)
-        portStatus = "BaudRate set to: " + BaudRate.ToString();
-
-        if (ShowDebugs)
-            ShowDebugMessages(portStatus);
-
-        // Return the new BaudRate just in case
-        return BaudRate;
     }
 
     /// <summary>
