@@ -5,7 +5,7 @@ void FunctionA(char *prop)
   // Output the data
   Serial.print("A,");
   Serial.print(prop); 
-  // Serial.println();
+  Serial.println();
   // Data already contains "\n"
 }
 

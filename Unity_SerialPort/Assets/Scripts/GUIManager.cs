@@ -1,9 +1,5 @@
-﻿// <copyright file="GUIManager.cs" company="dyadica.co.uk">
-// Copyright (c) 2010, 2014 All Right Reserved, http://www.dyadica.co.uk
-
-// This source is subject to the dyadica.co.uk Permissive License.
-// Please see the http://www.dyadica.co.uk/permissive-license file for more information.
-// All other rights reserved.
+// <copyright file="GUIManager.cs" company="dyadica.co.uk">
+// Copyright (c) 2010, 2014, 2022 All Right Reserved, http://www.dyadica.co.uk
 
 // THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
 // KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,38 +9,61 @@
 // </copyright>
 
 // <author>SJB</author>
-// <email>SJB@dyadica.co.uk</email>
+// <email>github@dyadica.co.uk</email>
 // <date>04.09.2013</date>
 // <summary>A MonoBehaviour type class containing an example GUI that can be used to 
 // communicate with the UnitySerialPort.cs script</summary>
 
+// This code was updated 03.02.2022 to include Notification Events. My website is
+// down so please see the readme.md for more information!
+
 using UnityEngine;
-using System.Collections;
 
-//
+// new Text Mesh Pro text
+using TMPro;
 
-using UnityEngine.UI;
-
-public class GUIManager : MonoBehaviour 
+public class GUIManager : MonoBehaviour
 {
+    // Init a static reference if script is to be accessed by others when used in a 
+    // none static nature eg. its dropped onto a gameObject. The use of "Instance"
+    // allows access to public vars as such as those available to the unity editor.
+
     public static GUIManager Instance;
+
+    // A reference to the UnitySerialPort.cs Instance
 
     private UnitySerialPort unitySerialPort;
 
-    private string PortOpenStatus;
+    // GUI Text fields, raw data, event data
 
-    public Text RawDataGUI;
-    public Text DataValueGUI;
-    public Text ComButton;
+    public TMP_Text RawDataGUI;
+    public TMP_Text EvtDataGUI;
 
-    public InputField OutputString;
+    // GUI Button, open/close serial port
 
-    public bool ShowDebugs = true;
+    public TMP_Text ComButton;
+
+    // GUI Text field, status
+
+    public TMP_Text StatusMsgBox;
+
+    // GUI Inputfield, output text
+
+    public TMP_InputField OutputString;
+
+    // Property to sore the incomming data so it is
+    // accessible via the unity main loop/thread
+
+    private string EvtDataString;
+
+    // An example of using the parsed data
+    public int[] ParsedEvtData;
+
 
     /// <summary>
     /// Use this for before initialization
     /// </summary>
-    void Awake ()
+    void Awake()
     {
         Instance = this;
     }
@@ -52,7 +71,7 @@ public class GUIManager : MonoBehaviour
     /// <summary>
     /// Use this for initialization
     /// </summary>
-	void Start () 
+	void Start()
     {
         // Register reference to the UnitySerialPort. This
         // was defined in the scripts Awake function so we
@@ -60,62 +79,90 @@ public class GUIManager : MonoBehaviour
 
         unitySerialPort = UnitySerialPort.Instance;
 
-        // Register the script for all of the available event
-        // notifications.
+        // Register an event for data reception!
 
         UnitySerialPort.SerialDataParseEvent += 
-            new UnitySerialPort.SerialDataParseEventHandler(UnitySerialPort_SerialDataParseEvent);
-
-        // Port status events
-
-        UnitySerialPort.SerialPortOpenEvent +=
-            new UnitySerialPort.SerialPortOpenEventHandler(UnitySerialPort_SerialPortOpenEvent);
-
-        UnitySerialPort.SerialPortCloseEvent +=
-            new UnitySerialPort.SerialPortCloseEventHandler(UnitySerialPort_SerialPortCloseEvent);
-
-        // Sent data events
-
-        UnitySerialPort.SerialPortSentDataEvent +=
-            new UnitySerialPort.SerialPortSentDataEventHandler(UnitySerialPort_SerialPortSentDataEvent);
-
-        UnitySerialPort.SerialPortSentLineDataEvent +=
-            new UnitySerialPort.SerialPortSentLineDataEventHandler(UnitySerialPort_SerialPortSentLineDataEvent);
-
-       
+            UnitySerialPort_SerialDataParseEvent;
     }
-	
+
+    /// <summary>
+    /// Data parsed serialport notification event
+    /// </summary>
+    /// <param name="data">string</param>
+    /// <param name="rawData">string[]</param>
+    private void UnitySerialPort_SerialDataParseEvent(string[] data, string rawData)
+    {
+        // If we are using the threading method we can set local variable
+        // via an event and this can then be used for GUI etc.
+
+        // EvtDataString = "Evt: " + rawData; // e.g.1
+
+        // If we try to acces the data directly it will cause an error as
+        // it originates from a seperate thread e.g:
+        // get_isActiveAndEnabled can only be called from the main thread.
+        // un-comment to try (p.s. also comment out the equivalent update call)
+        // None of this is a problem with the coroutine method as it is run on
+        // the same thread!
+
+        //if (EvtDataGUI != null)
+        //    EvtDataGUI.text = rawData;
+
+        // Here is another example showing how to obtain the data and convert it to
+        // an array of ints. It also outputs each value to the GUI on a seperate line
+        // so that they can be easily viewed etc!
+
+        // Create the array
+
+        ParsedEvtData = new int[data.Length];
+
+        // Create a string for GUI display
+
+        string values = string.Empty;
+
+        // Populate both the array and string using the event data
+
+        for(int i=0; i<data.Length; i++)
+        {
+            // Convert the data to ints. These can be vieved
+            // via the unity editor!
+
+            ParsedEvtData[i] = int.Parse(data[i]);
+
+            // add to the string
+            values += i + ": " + data[i];
+
+            // check if we are at the last value and if not add a new line
+            if (i != data.Length - 1)
+                values += "\n";
+
+        }
+
+        // Update the variable so the gui can call it up the update method
+        EvtDataString = values; // e.g.2
+    }
+
     /// <summary>
     /// Update is called once per frame
     /// </summary>
-	void Update () 
+    void Update()
     {
-        // Check to see if we have a serial port defined
-        // and if not then return.
+        // If we are using the threading method we can obtain the data
+        // using the properties set in the UnitySerialPort.cs. Events
+        // wont work for the GUI due to the loop being a seperate thread.
 
-        if (unitySerialPort.SerialPort == null)
-        {
-            // Display the ports status (via button)
+        if (RawDataGUI != null)
+            RawDataGUI.text = "Raw: " + unitySerialPort.RawData;
 
-            PortOpenStatus = "Open Port";
+        // If we are using the threading method we can set local variable
+        // via an event and this can then be used for GUI etc.
 
-            if (ComButton != null)
-                ComButton.text = PortOpenStatus;
+        if (EvtDataGUI != null)
+            EvtDataGUI.text = EvtDataString;
 
-            return;
-        }
+        if (StatusMsgBox != null)
+            StatusMsgBox.text = unitySerialPort.PortStatus;
 
-        // Check to see if the serial port is open or not
-        // and then set the button text "PortOpenStatus" 
-        // to reflect.
-
-        switch (unitySerialPort.SerialPort.IsOpen)
-        {
-            case true: PortOpenStatus = "Close Port"; break;
-            case false: PortOpenStatus = "Open Port"; break;
-        }
-
-	    // Here we have some sample usage scenarios that
+        // Here we have some sample usage scenarios that
         // demo the operation of the UnitySerialPort. In
         // order to use these you must first ensure that
         // the custom inputs are defined via:
@@ -124,131 +171,69 @@ public class GUIManager : MonoBehaviour
 
         if (Input.GetButtonDown("SendData"))
         { unitySerialPort.SendSerialDataAsLine(OutputString.text); }
-	}
 
-    // Method that can be used to both open
-    // and close the serial port.
+        // Example of sending key 1 press event to arduino.
+        // The "A,1" string will call functionA and pass a
+        // char value of 1
+        if (Input.GetButtonDown("Key1"))
+        { unitySerialPort.SendSerialDataAsLine("A,1"); }
 
+        // Example of sending key 1 press event to arduino.
+        // The "A,2" string will call functionA and pass a
+        // char value of 2
+        if (Input.GetButtonDown("Key2"))
+        { unitySerialPort.SendSerialDataAsLine("B,1"); }
+
+        // Example of sending space press event to arduino
+        if (Input.GetButtonDown("Key3"))
+        { unitySerialPort.SendSerialDataAsLine(""); }
+    }
+
+
+
+    /// <summary>
+    /// Method that can be used to both open and close the serial port.
+    /// </summary>
     public void OpenClosePort()
     {
+        // Check to see if there is a port set
         if (unitySerialPort.SerialPort == null)
-        { unitySerialPort.OpenSerialPort(); return; }
+        {   
+            // nope so best open one
+            unitySerialPort.OpenSerialPort();
 
-        switch (unitySerialPort.SerialPort.IsOpen)
-        {
-            case true: unitySerialPort.CloseSerialPort(); break;
-            case false: unitySerialPort.OpenSerialPort(); break;
+            // Update the gui to reflect
+            if (ComButton != null)
+                ComButton.text = "Close-Port";
+
+            // exit
+            return;
         }
+        else
+        {
+            // yup so lets close it!
+            unitySerialPort.CloseSerialPort();
 
-        // Update the buttons text display
+            // Update the gui to reflect
+            if (ComButton != null)
+                ComButton.text = "Open-Port";
 
-        if (ComButton != null)
-            ComButton.text = PortOpenStatus;
+            //exit
+            return;
+        }
     }
 
-    // Method that can be used to send serial
-    // data from the unity environment.
-
+    /// <summary>
+    ///  Method that can be used to send serial data from the unity environment.
+    /// </summary>
     public void SendSerialData()
     {
-        if (unitySerialPort.SerialPort.IsOpen)
+        // Send data as is
+        //if (unitySerialPort.SerialPort != null && unitySerialPort.SerialPort.IsOpen)
+        //    unitySerialPort.SendSerialData(OutputString.text);
+
+        // Send data as line
+        if (unitySerialPort.SerialPort != null && unitySerialPort.SerialPort.IsOpen)
             unitySerialPort.SendSerialDataAsLine(OutputString.text);
     }
-
-    /// <summary>
-    /// This function is called when the MonoBehaviour will be destroyed.
-    /// OnDestroy will only be called on game objects that have previously
-    /// been active.
-    /// </summary>
-    void OnDestroy()
-    {
-        // If we are registered for a notification of the 
-        // SerialPort events then remove the registration
-
-        UnitySerialPort.SerialDataParseEvent -= 
-            UnitySerialPort_SerialDataParseEvent;
-
-        // Port status events
-
-        UnitySerialPort.SerialPortOpenEvent -= 
-            UnitySerialPort_SerialPortOpenEvent;
-
-         UnitySerialPort.SerialPortCloseEvent -= 
-             UnitySerialPort_SerialPortCloseEvent;
-
-        // Sent data events
-
-         UnitySerialPort.SerialPortSentDataEvent -=
-             UnitySerialPort_SerialPortSentDataEvent;
-
-         UnitySerialPort.SerialPortSentLineDataEvent -=
-             UnitySerialPort_SerialPortSentLineDataEvent;
-    }
-
-    #region Notification Events
-
-    /// <summary>
-    /// Data parsed serialport notification event
-    /// </summary>
-    /// <param name="Data">string[]</param>
-    /// <param name="RawData">string</param>
-    void UnitySerialPort_SerialDataParseEvent(string[] Data, string RawData)
-    {
-        // print debug if ShowDebugs set to true
-
-        if (ShowDebugs)
-            print("Data Recieved via GUIManager: " + RawData);
-
-        // If we have assigned a GUIText object to RawDataGUI then use 
-        // this object to show the raw data
-
-        if (RawDataGUI != null && Data.Length >= 2)
-            RawDataGUI.text = "RawData: " + RawData;
-
-        // If we have 2 or more values in the Data string[] then we know
-        // that index[1] is a value.
-
-        if (DataValueGUI != null && Data.Length >= 2)
-            DataValueGUI.text = "ValData: " + Data[1]; 
-    }
-
-    /// <summary>
-    /// Open serialport notification event
-    /// </summary>
-    void UnitySerialPort_SerialPortOpenEvent()
-    {
-        if (ShowDebugs)
-            print("The serialport is now open! via GUIManager");
-    }
-
-    /// <summary>
-    /// Close serialport notification event
-    /// </summary>
-    void UnitySerialPort_SerialPortCloseEvent()
-    {
-        if (ShowDebugs)
-            print("The serialport is now closed! via GUIManager");
-    }
-
-    /// <summary>
-    /// Send data serialport notification event
-    /// </summary>
-    /// <param name="Data"></param>
-    void UnitySerialPort_SerialPortSentDataEvent(string Data)
-    {
-        if (ShowDebugs)
-            print("Sent data: " + Data);
-    }
-
-    /// <summary>
-    /// Send data with "\n" serialport notification event
-    /// </summary>
-    /// <param name="Data">string</param>
-    void UnitySerialPort_SerialPortSentLineDataEvent(string Data)
-    {
-        if (ShowDebugs)
-            print("Sent data as line: " + Data);
-    }
-
-    #endregion Notification Events
 }

@@ -1,9 +1,5 @@
-﻿// <copyright file="UnitySerialPort.cs" company="dyadica.co.uk">
+// <copyright file="UnitySerialPort.cs" company="dyadica.co.uk">
 // Copyright (c) 2010, 2014 All Right Reserved, http://www.dyadica.co.uk
-
-// This source is subject to the dyadica.co.uk Permissive License.
-// Please see the http://www.dyadica.co.uk/permissive-license file for more information.
-// All other rights reserved.
 
 // THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY 
 // KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -13,7 +9,7 @@
 // </copyright>
 
 // <author>SJB</author>
-// <email>SJB@dyadica.co.uk</email>
+// <email>github@dyadica.co.uk</email>
 // <date>04.09.2013</date>
 // <summary>A MonoBehaviour type class containing several functions which can be utilised 
 // to perform serial communication within Unity3D</summary>
@@ -22,22 +18,23 @@
 // http://www.dyadica.co.uk/journal/adding-events-to-the-serialport-script for
 // more information.
 
+// This code was updated 03.02.2022 to include Notification Events. My website is
+// down so please see the readme.md for more information!
+
 using UnityEngine;
 using System.Collections;
 
-using System.IO;
 using System.IO.Ports;
 using System;
 
 using System.Threading;
 
-// needed for invoke
-using System.ComponentModel;
-
-using UnityEngine.UI;
 using System.Collections.Generic;
 
-public class UnitySerialPort : MonoBehaviour 
+// new Text Mesh Pro text
+using TMPro;
+
+public class UnitySerialPort : MonoBehaviour
 {
     // Init a static reference if script is to be accessed by others when used in a 
     // none static nature eg. its dropped onto a gameObject. The use of "Instance"
@@ -47,13 +44,19 @@ public class UnitySerialPort : MonoBehaviour
 
     #region Properties
 
+    public enum LoopMethods
+    { Threading, Coroutine }
+
+    [SerializeField]
+    public LoopMethods LoopMethod = 
+        LoopMethods.Coroutine;
+
     // The serial port
 
     public SerialPort SerialPort;
 
-    // The script update can now only run as a standard 
-    // coroutine. All reference to threading has been 
-    // removed!
+    // Thread for thread version of port
+    Thread SerialLoopThread;
 
     // List of all baudrates available to the arduino platform
 
@@ -115,7 +118,7 @@ public class UnitySerialPort : MonoBehaviour
         get { return rawData; }
         set { rawData = value; }
     }
-    
+
     // Storage for parsed incoming data
 
     private string[] chunkData;
@@ -129,9 +132,12 @@ public class UnitySerialPort : MonoBehaviour
     // functionality if script is to be used in a non-static
     // context.
 
-    public Text ComStatusText;
-    public Text RawDataText;
-    
+    public TMP_Text ComStatusText;
+    public TMP_Text RawDataText;
+    public TMP_Text StatusMsgBox;
+
+    // public TMP_InputField OutputString;
+
     // Define a delegate for our event to use. Delegates 
     // encapsulate both an object instance and a method 
     // and are similar to c++ pointers.
@@ -201,12 +207,12 @@ public class UnitySerialPort : MonoBehaviour
     {
         // Register for a notification of the SerialDataParseEvent
 
-        SerialDataParseEvent += 
+        SerialDataParseEvent +=
             new SerialDataParseEventHandler(UnitySerialPort_SerialDataParseEvent);
 
         // Register for a notification of the open port event
 
-        SerialPortOpenEvent += 
+        SerialPortOpenEvent +=
             new SerialPortOpenEventHandler(UnitySerialPort_SerialPortOpenEvent);
 
         // Register for a notification of the close port event
@@ -221,7 +227,7 @@ public class UnitySerialPort : MonoBehaviour
         // If set to true then open the port. You must 
         // ensure that the port is valid etc. for this! 
 
-        if (OpenPortOnStart) { OpenSerialPort(); }        
+        if (OpenPortOnStart) { OpenSerialPort(); }
     }
 
     /// <summary>
@@ -242,6 +248,7 @@ public class UnitySerialPort : MonoBehaviour
 
         if (SerialPortCloseEvent != null)
             SerialPortCloseEvent -= UnitySerialPort_SerialPortCloseEvent;
+
     }
 
     /// <summary>
@@ -256,30 +263,42 @@ public class UnitySerialPort : MonoBehaviour
         if (SerialPort == null || SerialPort.IsOpen == false) { return; }
 
         // Example calls from system to the arduino. For more detail on the
-        // structure of the calls see: http://www.dyadica.co.uk/journal/simple-serial-string-parsing/
-        try
-        {
-            // Example of sending space press event to arduino
-            if (Input.GetKeyDown("space"))
-            { SerialPort.WriteLine(""); }
+        // structure of the calls see:
+        // http://www.dyadica.co.uk/journal/simple-serial-string-parsing/
 
-            // Example of sending key 1 press event to arduino.
-            // The "A,1" string will call functionA and pass a
-            // char value of 1
-            if (Input.GetKeyDown(KeyCode.Alpha1))
-            { SerialPort.WriteLine("A,1"); }
+        //try
+        //{
+        //    // Here we have some sample usage scenarios that
+        //    // demo the operation of the UnitySerialPort. In
+        //    // order to use these you must first ensure that
+        //    // the custom inputs are defined via:
 
-            // Example of sending key 1 press event to arduino.
-            // The "A,2" string will call functionA and pass a
-            // char value of 2
-            if (Input.GetKeyDown(KeyCode.Alpha2))
-            { SerialPort.WriteLine("A,2"); }
-        }
-        catch (Exception ex)
-        {
-            // Failed to send serial data
-            Debug.Log("Error 6: " + ex.Message.ToString());
-        }
+        //    // Edit > Project Settings > Input
+
+        //    if (Input.GetButtonDown("SendData"))
+        //    { SendSerialDataAsLine(OutputString.text); }
+
+        //    // Example of sending key 1 press event to arduino.
+        //    // The "A,1" string will call functionA and pass a
+        //    // char value of 1
+        //    if (Input.GetButtonDown("Key1"))
+        //    { SendSerialDataAsLine("A,1"); }
+
+        //    // Example of sending key 1 press event to arduino.
+        //    // The "A,2" string will call functionA and pass a
+        //    // char value of 2
+        //    if (Input.GetButtonDown("Key2"))
+        //    { SendSerialDataAsLine("A,2"); }
+
+        //    // Example of sending space press event to arduino
+        //    if (Input.GetButtonDown("Key3"))
+        //    { SendSerialDataAsLine(""); }
+        //}
+        //catch (Exception ex)
+        //{
+        //    // Failed to send serial data
+        //    Debug.Log("Error 6: " + ex.Message.ToString());
+        //}
 
         try
         {
@@ -287,11 +306,11 @@ public class UnitySerialPort : MonoBehaviour
             // run on the thread that initialised the object thus cnnot be run
             // in the ParseSerialData() call below... Unless run as a coroutine!
 
-            // I have also included a raw data example which is called from a
-            // seperate script... see RawDataExample.cs
+            // I have also included other raw data examples in GUIManager.cs         
 
+            // RawDataText is null/none by default for examples (see GUIManager.cs)
             if (RawDataText != null)
-                RawDataText.text = RawData;
+                RawDataText.text = RawData; 
         }
         catch (Exception ex)
         {
@@ -308,11 +327,15 @@ public class UnitySerialPort : MonoBehaviour
         // Call to cloase the serial port
         CloseSerialPort();
 
-        Thread.Sleep(500);
+        Thread.Sleep(100);
 
-        StopSerialCoroutine();
-      
-        Thread.Sleep(500);
+        if (LoopMethod == LoopMethods.Coroutine)
+            StopSerialCoroutine();
+
+        if (LoopMethod == LoopMethods.Threading)
+            StopSerialThreading();
+
+        Thread.Sleep(100);
     }
 
     #endregion Unity Frame Events
@@ -325,8 +348,9 @@ public class UnitySerialPort : MonoBehaviour
     /// <param name="Data">string</param>
     /// <param name="RawData">string[]</param>
     void UnitySerialPort_SerialDataParseEvent(string[] Data, string RawData)
-    {
-        if (ShowDebugs) 
+    {       
+        // Not fired via portStatus to avoid hiding other messages from the GUI
+        if (ShowDebugs)
             print("Data Recieved via port: " + RawData);
     }
 
@@ -335,8 +359,10 @@ public class UnitySerialPort : MonoBehaviour
     /// </summary>
     void UnitySerialPort_SerialPortOpenEvent()
     {
-        if (ShowDebugs) 
-            print("The serialport is now open!");
+        portStatus = "The serialport is now open!";
+
+        if (ShowDebugs)
+            ShowDebugMessages(portStatus);
     }
 
     /// <summary>
@@ -344,8 +370,10 @@ public class UnitySerialPort : MonoBehaviour
     /// </summary>
     void UnitySerialPort_SerialPortCloseEvent()
     {
-        if (ShowDebugs) 
-            print("The serialport is now closed!");
+        portStatus = "The serialport is now closed!";
+
+        if (ShowDebugs)
+            ShowDebugMessages(portStatus);
     }
 
     /// <summary>
@@ -354,8 +382,10 @@ public class UnitySerialPort : MonoBehaviour
     /// <param name="Data">string</param>
     void UnitySerialPort_SerialPortSentDataEvent(string Data)
     {
+        portStatus = "Sent data: " + Data;
+
         if (ShowDebugs)
-            print("Sent data: " + Data);
+            ShowDebugMessages(portStatus);
     }
 
     /// <summary>
@@ -364,8 +394,10 @@ public class UnitySerialPort : MonoBehaviour
     /// <param name="Data">string</param>
     void UnitySerialPort_SerialPortSentLineDataEvent(string Data)
     {
+        portStatus = "Sent data as line: " + Data;
+
         if (ShowDebugs)
-            print("Sent data as line: " + Data);
+            ShowDebugMessages(portStatus);
     }
 
     #endregion Notification Events
@@ -387,6 +419,9 @@ public class UnitySerialPort : MonoBehaviour
 
             SerialPort.WriteTimeout = WriteTimeout;
 
+            SerialPort.DtrEnable = false;
+            SerialPort.RtsEnable = false;
+
             // Open the serial port
             SerialPort.Open();
 
@@ -394,39 +429,34 @@ public class UnitySerialPort : MonoBehaviour
             if (Instance != null && Instance.ComStatusText != null)
             { Instance.ComStatusText.text = "ComStatus: Open"; }
 
-            if (isRunning == false)
+            if (LoopMethod == LoopMethods.Coroutine)
             {
-                StartSerialCoroutine();
-            }
-            else
-            {
-                isRunning = false;
-
-                // Give it chance to timeout
-                Thread.Sleep(100);
-
-                try
+                if (isRunning)
                 {
-                    // Kill it just in case
-                    StopCoroutine("SerialCoroutineLoop");
-                }
-                catch (Exception ex)
-                {
-                    if (ShowDebugs)
-                        print("Error N: " + ex.Message.ToString());
+                    // TCoroutine is already running so kill it!?
+                    StopSerialCoroutine();
                 }
 
                 // Restart it once more
                 StartSerialCoroutine();
             }
 
+            if (LoopMethod == LoopMethods.Threading)
+            {
+                if (isRunning)
+                {
+                    // Thread is already running so kill it!?
+                    StopSerialThreading();
+                }
+
+                // Restart it once more
+                StartSerialThread();
+            }
+
+            portStatus = "The serialport is now open!";
+
             if (ShowDebugs)
-                print("SerialPort successfully opened!");
-
-            // Trigger a port open notification
-
-            if (SerialPortOpenEvent != null)
-                SerialPortOpenEvent();
+                ShowDebugMessages(portStatus);
 
         }
         catch (Exception ex)
@@ -468,8 +498,16 @@ public class UnitySerialPort : MonoBehaviour
             }
         }
 
+        if (LoopMethod == LoopMethods.Coroutine)
+            StopSerialCoroutine();
+
+        if (LoopMethod == LoopMethods.Threading)
+            StopSerialThreading();
+
+        portStatus ="Serial port closed!";
+
         if (ShowDebugs)
-            print("Serial port closed!");
+            ShowDebugMessages(portStatus);
 
         // Trigger a port closed notification
 
@@ -478,6 +516,70 @@ public class UnitySerialPort : MonoBehaviour
     }
 
     #endregion Object Serial Port
+
+    #region Serial Threading
+
+    void StartSerialThread()
+    {
+        isRunning = true;
+
+        SerialLoopThread = new Thread(SerialThreadLoop);
+        SerialLoopThread.Start();
+    }
+
+    void SerialThreadLoop()
+    {
+        while (isRunning)
+        {
+            if (isRunning == false)
+                break;
+
+            // Run the generic loop
+            GenericSerialLoop();
+        }
+
+      portStatus = "Ending Serial Thread!";
+
+        if (ShowDebugs)
+            ShowDebugMessages(portStatus);
+    }
+
+    /// <summary>
+    /// Function used to stop the thread and "over" kill
+    /// off any instance
+    /// </summary>
+    public void StopSerialThreading()
+    {
+        isRunning = false;
+
+        // this should timeout the thread
+
+        Thread.Sleep(100);
+
+        // otherwise...
+
+        if (SerialLoopThread != null && SerialLoopThread.IsAlive)
+            SerialLoopThread.Abort();
+
+        Thread.Sleep(100);
+
+        if (SerialLoopThread != null)
+            SerialLoopThread = null;
+
+        // Reset the serial port to null
+
+        if (SerialPort != null)
+        { SerialPort = null; }
+
+        // Update the port status... just in case :)
+
+        portStatus = "Ended Serial Loop Thread!";
+
+        if (ShowDebugs)
+            ShowDebugMessages(portStatus);
+    }
+
+    #endregion Serial Threading
 
     #region Serial Coroutine
 
@@ -504,8 +606,10 @@ public class UnitySerialPort : MonoBehaviour
             yield return null;
         }
 
+       portStatus = "Ending Coroutine!";
+
         if (ShowDebugs)
-            print("Ending Coroutine!");
+            ShowDebugMessages(portStatus);
     }
 
     /// <summary>
@@ -524,8 +628,10 @@ public class UnitySerialPort : MonoBehaviour
         }
         catch (Exception ex)
         {
+            portStatus = "Error 2A: " + ex.Message.ToString();
+
             if (ShowDebugs)
-                print("Error 2A: " + ex.Message.ToString());
+                ShowDebugMessages(portStatus);
         }
 
         // Reset the serial port to null
@@ -536,12 +642,10 @@ public class UnitySerialPort : MonoBehaviour
         portStatus = "Ended Serial Loop Coroutine!";
 
         if (ShowDebugs)
-            print("Ended Serial Loop Coroutine!");
+            ShowDebugMessages(portStatus);
     }
 
     #endregion Serial Coroutine
-
-    #region Static Functions
 
     /// <summary>
     /// Function used to send string data over serial with
@@ -553,8 +657,10 @@ public class UnitySerialPort : MonoBehaviour
         if (SerialPort != null)
         { SerialPort.WriteLine(data); }
 
+        portStatus = "Sent data: " + data;
+
         if (ShowDebugs)
-            print("Sent data: " + data);
+            ShowDebugMessages(portStatus);
 
         // throw a sent data notification
 
@@ -572,16 +678,16 @@ public class UnitySerialPort : MonoBehaviour
         if (SerialPort != null)
         { SerialPort.Write(data); }
 
+        portStatus = "Sent data: " + data;
+
         if (ShowDebugs)
-            print("Sent data: " + data);
+            ShowDebugMessages(portStatus);
 
         // throw a sent data notification
 
         if (SerialPortSentLineDataEvent != null)
             SerialPortSentLineDataEvent(data);
     }
-
-    #endregion Static Functions
 
     /// <summary>
     /// The serial thread loop & the coroutine loop both utilise
@@ -613,7 +719,7 @@ public class UnitySerialPort : MonoBehaviour
                 }
             }
         }
-        catch (TimeoutException timeout)
+        catch (TimeoutException)
         {
             // This will be triggered lots with the coroutine method
         }
@@ -631,7 +737,7 @@ public class UnitySerialPort : MonoBehaviour
                 // Error caused by closing the port whilst in use! This is 
                 // not really an error but uncomment if you wish.
 
-                // Debug.Log("Error 5: Port Closed Exception!");
+                Debug.Log("Error 5: Port Closed Exception!");
             }
         }
     }
@@ -670,11 +776,14 @@ public class UnitySerialPort : MonoBehaviour
 
             comPorts.Add(cPort);
 
-            Debug.Log(cPort.ToString());
+            // Debug.Log(cPort.ToString());
         }
 
         // Update the port status just in case :)
         portStatus = "ComPort list population complete";
+
+        if (ShowDebugs)
+            ShowDebugMessages(portStatus);
     }
 
     /// <summary>
@@ -706,6 +815,9 @@ public class UnitySerialPort : MonoBehaviour
 
         // Update the port status just in case :)
         portStatus = "ComPort set to: " + ComPort.ToString();
+
+        if (ShowDebugs)
+            ShowDebugMessages(portStatus);
 
         // Return the new ComPort just in case
         return ComPort;
@@ -741,7 +853,22 @@ public class UnitySerialPort : MonoBehaviour
         // Update the port status just in case :)
         portStatus = "BaudRate set to: " + BaudRate.ToString();
 
+        if (ShowDebugs)
+            ShowDebugMessages(portStatus);
+
         // Return the new BaudRate just in case
         return BaudRate;
+    }
+
+    /// <summary>
+    /// What it says on the tin!
+    /// </summary>
+    /// <param name="portStatus">string</param>
+    public void ShowDebugMessages(string portStatus)
+    {
+        if (StatusMsgBox != null)
+            StatusMsgBox.text = portStatus;
+
+        print(portStatus);
     }
 }

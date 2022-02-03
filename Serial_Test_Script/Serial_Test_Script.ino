@@ -23,6 +23,8 @@
  
  */
 
+// #include "Arduino.h"
+
 // Buffer for the incoming data
 char inData[100];
 // Buffer for the parsed data chunks
@@ -32,7 +34,7 @@ char *inParse[100];
 String inString = "";
 
 // Incoming data id
-int index = 0;
+int indx = 0;
 // Read state of incoming data
 boolean stringComplete = false;
 
@@ -51,7 +53,7 @@ void setup()
   
   // Initialise the serial port
   
-  Serial.begin(9600);
+  Serial.begin(115200);
   
   // Ready to go!  
   
@@ -60,6 +62,11 @@ void setup()
 
 void loop() 
 {
+
+  // For ESP32 as it doesn't register serialEvent
+  if (Serial.available())
+        serialEvent();
+  
   if (stringComplete) 
   {
     // Parse the recieved data
@@ -138,9 +145,9 @@ void serialEvent()
     // Read a character
     char inChar = Serial.read(); 
     // Store it in char array
-    inData[index] = inChar; 
+    inData[indx] = inChar; 
     // Increment where to write next
-    index++;     
+    indx++;     
     // Also add it to string storage just
     // in case, not used yet :)
     inString += inChar;
@@ -149,7 +156,7 @@ void serialEvent()
     if (inChar == '\n') 
     {
       // Reset the index
-      index = 0;
+      indx = 0;
       // Set completion of read to true
       stringComplete = true;
     }
