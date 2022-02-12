@@ -13,12 +13,12 @@ This [repository](https://github.com/dyadica/Unity_SerialPort/tree/3135911711524
 
 In addition to the example Unity3D files also included is an Arduino sample which can be used to test the serialports functionality.
 
-For more information on the use and install of the files following download check out my blog: www.dyadica.co.uk
+For more information on the use and install of the files following download check out my blog: dyadica.github.io/blog
 
 Direct links:
 
-Unity - http://www.dyadica.co.uk/journal/adding-events-to-the-serialport-script/
+Unity - https://dyadica.github.io/blog/adding-events-to-the-serialport-script/
 
-Unity - http://www.dyadica.co.uk/journal/unity3d-serialport-script/
+Unity - https://dyadica.github.io/blog/unity3d-serialport-script/
 
-Arduino - http://www.dyadica.co.uk/journal/simple-serial-string-parsing/
+Arduino -https://dyadica.github.io/blog/simple-serial-string-parsing/
