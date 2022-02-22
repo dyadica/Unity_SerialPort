@@ -21,6 +21,7 @@ using UnityEngine;
 
 // new Text Mesh Pro text
 using TMPro;
+using System.Collections.Generic;
 
 public class GUIManager : MonoBehaviour
 {
@@ -59,7 +60,6 @@ public class GUIManager : MonoBehaviour
     // An example of using the parsed data
     public int[] ParsedEvtData;
 
-
     /// <summary>
     /// Use this for before initialization
     /// </summary>
@@ -97,8 +97,8 @@ public class GUIManager : MonoBehaviour
 
         // EvtDataString = "Evt: " + rawData; // e.g.1
 
-        // If we try to acces the data directly it will cause an error as
-        // it originates from a seperate thread e.g:
+        // If we try to access the data directly it will cause an error as
+        // it originates from a separate thread e.g:
         // get_isActiveAndEnabled can only be called from the main thread.
         // un-comment to try (p.s. also comment out the equivalent update call)
         // None of this is a problem with the coroutine method as it is run on
@@ -108,7 +108,7 @@ public class GUIManager : MonoBehaviour
         //    EvtDataGUI.text = rawData;
 
         // Here is another example showing how to obtain the data and convert it to
-        // an array of ints. It also outputs each value to the GUI on a seperate line
+        // an array of ints. It also outputs each value to the GUI on a separate line
         // so that they can be easily viewed etc!
 
         // Create the array
@@ -126,7 +126,7 @@ public class GUIManager : MonoBehaviour
             // Convert the data to ints. These can be vieved
             // via the unity editor!
 
-            ParsedEvtData[i] = int.Parse(data[i]);
+            int.TryParse(data[i], out ParsedEvtData[i]);
 
             // add to the string
             values += i + ": " + data[i];
@@ -134,7 +134,6 @@ public class GUIManager : MonoBehaviour
             // check if we are at the last value and if not add a new line
             if (i != data.Length - 1)
                 values += "\n";
-
         }
 
         // Update the variable so the gui can call it up the update method
@@ -188,8 +187,6 @@ public class GUIManager : MonoBehaviour
         if (Input.GetButtonDown("Key3"))
         { unitySerialPort.SendSerialDataAsLine(""); }
     }
-
-
 
     /// <summary>
     /// Method that can be used to both open and close the serial port.

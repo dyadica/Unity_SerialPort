@@ -83,11 +83,17 @@ void loop()
   
   if(showDataStream)
   {
-    // Send the dummy value
-    
+
+    // use seperator "," to split data
     Serial.print("D,");
+    // Send the dummy value 
     Serial.print(dummy);
+
+    // Newline character for .Readline()
     Serial.println(); 
+        
+    // Delimiter character for .ReadTo(Delimeter)
+    // Serial.print("|"); 
  
     // change the dummy value 
     
