@@ -2,7 +2,7 @@
 
 ![The UnitySerialPort](https://dyadica.github.io/wp-content/uploads/2022/02/21/SP_Full.png)
 
-This [repository](https://github.com/dyadica/Unity_SerialPort/tree/31359117115245526634b6f4beea60ea96674421) contains an example Unity3D project that shows the use of serial communication between Unity and a configurable COM port. This in turn allows for the use of custom hardware developed on platforms such as Arduino and Netduino to be used within Unity applications. In addition to the example Unity3D files also included is an Arduino sample which can be used to test the serialports functionality.
+This repository contains an example Unity3D project that shows the use of serial communication between Unity and a configurable COM port. This in turn allows for the use of custom hardware developed on platforms such as Arduino and Netduino to be used within Unity applications. In addition to the example Unity3D files also included is an Arduino sample which can be used to test the serialports functionality.
 
 ## Updates (Threading and Coroutine)
 * 22.02.22: Added data read options (ReadLine and ReadTo)
@@ -16,7 +16,7 @@ Full documentation coming soon (website currently down) but for now provided in 
 
 ## Unity_SerialPort (Coroutine Only) 2013-2016
 
-For more information on the use and install of the files following download check out my blog: dyadica.github.io/blog
+For more information on the use and install of the files following download check out my blog: dyadica.github.io/blog.
 
 Direct links:
 
