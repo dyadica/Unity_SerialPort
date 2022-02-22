@@ -1,24 +1,25 @@
-# Unity Serial Port (Threading and Coroutine) 2022
+# Unity_SerialPort Example Project (2022)
 
-An updated version of the Unity_SerialPort so that it works with both Unity 2021 and the ESP32 Microcontrollers (Standard Port). 
+![The UnitySerialPort](https://dyadica.github.io/wp-content/uploads/2022/02/21/SP_Full.png)
 
-The Unity_SerialPort.cs script allows for comms to be opened using either a seperate thread or coroutine to listen for incoming data. Using an external thread to call the Unity API can be a little tricky; however there are a few workarounds! 
+This repository contains an example Unity3D project that shows the use of serial communication between Unity and a configurable COM port. This in turn allows for the use of custom hardware developed on platforms such as Arduino and Netduino to be used within Unity applications. In addition to the example Unity3D files also included is an Arduino sample which can be used to test the serialports functionality.
+
+## Updates (Threading and Coroutine)
+* 22.02.22: Added data read options (ReadLine and ReadTo)
+* 03.02.22: An updated version of the Unity_SerialPort so that it now works with both Unity 2021 and the ESP32 Microcontrollers (Standard Port). 
+
+## Overview
+The Unity_SerialPort.cs script allows for a port to be opened using either a seperate thread, or a coroutine to listen for incoming data. Using an external thread to call the Unity API can be a little tricky; however there are a few workarounds! 
 
 Full documentation coming soon (website currently down) but for now provided in script as comments.
 
 
 ## Unity_SerialPort (Coroutine Only) 2013-2016
 
-This [repository](https://github.com/dyadica/Unity_SerialPort/tree/31359117115245526634b6f4beea60ea96674421) presents a script and or prefab developed to allow drag and drop capability for serial communication within the Unity3D game development ecosystem. This in turn allows for the use of  custom gaming controllers and hardware developed on platforms such as Arduino and Netduino within Unity applications.
-
-In addition to the example Unity3D files also included is an Arduino sample which can be used to test the serialports functionality.
-
-For more information on the use and install of the files following download check out my blog: dyadica.github.io/blog
+For more information on the use and install of the files following download check out my blog: dyadica.github.io/blog.
 
 Direct links:
 
-Unity - https://dyadica.github.io/blog/adding-events-to-the-serialport-script/
-
-Unity - https://dyadica.github.io/blog/unity3d-serialport-script/
-
-Arduino -https://dyadica.github.io/blog/simple-serial-string-parsing/
+* Unity - https://dyadica.github.io/blog/adding-events-to-the-serialport-script/
+* Unity - https://dyadica.github.io/blog/unity3d-serialport-script/
+* Arduino -https://dyadica.github.io/blog/simple-serial-string-parsing/
